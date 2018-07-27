@@ -1,8 +1,12 @@
 package com.exmple.miclockview
 
+import android.animation.PropertyValuesHolder
+import android.animation.TimeInterpolator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
@@ -35,13 +39,35 @@ constructor(
     //中心的坐标
     private var mCenterX: Int = 0
     private var mCenterY: Int = 0
-    private val paddingOut: Float = dp2px(12f)
+    private val paddingOut: Float = dp2px(25f)
     private val innerRadius: Float = dp2px(6f)
     private var mHourDegress: Int = 0
     private var mMinuteDegress: Int = 0
     private var mSecondMillsDegress: Float = 0f
     private var mSecondDegress: Int = 0
-    private var currentProgess: Int = 0
+
+    /* 时钟半径，不包括padding值 */
+    private var mRadius: Float = 0.toFloat()
+    /* 手指松开时时钟晃动的动画 */
+    private var mShakeAnim: ValueAnimator? = null
+    /* 触摸时作用在Camera的矩阵 */
+    private val mCameraMatrix: Matrix by lazy { Matrix() }
+    /* 照相机，用于旋转时钟实现3D效果 */
+    private val mCamera: Camera by lazy { Camera() }
+    /* camera绕X轴旋转的角度 */
+    private var mCameraRotateX: Float = 0f
+    /* camera绕Y轴旋转的角度 */
+    private var mCameraRotateY: Float = 0f
+    /* camera旋转的最大角度 */
+    private val mMaxCameraRotate = 10f
+    /* 指针的在x轴的位移 */
+    private var mCanvasTranslateX: Float = 0f
+    /* 指针的在y轴的位移 */
+    private var mCanvasTranslateY: Float = 0f
+    /* 指针的最大位移 */
+    private var mMaxCanvasTranslate: Float = 0f
+    /* 画布 */
+    private lateinit var mCanvas: Canvas
 
     init {
         mPaintOutCircle.color = color_halfWhite
@@ -51,7 +77,7 @@ constructor(
         mPaintOutText.color = color_halfWhite
         mPaintOutText.strokeWidth = dp2px(1f)
         mPaintOutText.style = Paint.Style.STROKE
-        mPaintOutText.textSize = sp2px(10f).toFloat()
+        mPaintOutText.textSize = sp2px(11f).toFloat()
         mPaintOutText.textAlign = Paint.Align.CENTER
 
         mPaintProgressBg.color = color_halfWhite
@@ -73,8 +99,9 @@ constructor(
         mPaintMinute.style = Paint.Style.STROKE
         mPaintMinute.strokeCap = Paint.Cap.ROUND
 
-        mPaintBall.color = Color.parseColor("#836FFF")
+        mPaintBall.color = Color.parseColor("#4169E1")
         mPaintBall.style = Paint.Style.FILL
+
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -92,11 +119,17 @@ constructor(
         mHeight = h
         mCenterX = mWidth / 2
         mCenterY = mHeight / 2
+        mRadius = (Math.min(w - paddingLeft - paddingRight,
+                h - paddingTop - paddingBottom) / 2).toFloat()
+
+        mMaxCanvasTranslate = 0.02f * mRadius
     }
 
     override fun onDraw(canvas: Canvas) {
+        mCanvas = canvas
         //平移到视图中心
         canvas.translate(mCenterX.toFloat(), mCenterY.toFloat())
+        setCameraRotate()
         drawArcCircle(canvas)
         drawOutText(canvas)
         drawCalibrationLine(canvas)
@@ -213,7 +246,7 @@ constructor(
     }
 
     // 指针转动的方法
-    fun startTick() {
+    private fun startTick() {
         // 一秒钟刷新一次
         postDelayed(mRunnable, 150)
     }
@@ -239,7 +272,7 @@ constructor(
         //因为是没2°旋转一个刻度，所以这里要根据毫秒值来进行计算
         when (mills) {
             in 2 until 4 -> {
-                mSecondDegress +=2
+                mSecondDegress += 2
             }
             in 4 until 6 -> {
                 mSecondDegress += 4
@@ -263,7 +296,127 @@ constructor(
         removeCallbacks(mRunnable)
     }
 
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                mShakeAnim?.let {
+                    if (it.isRunning) {
+                        it.cancel()
+                    }
+                }
+                getCameraRotate(event)
+                getCanvasTranslate(event)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                //根据手指坐标计算camera应该旋转的大小
+                getCameraRotate(event)
+                getCanvasTranslate(event)
+            }
+            MotionEvent.ACTION_UP ->
+                //松开手指，时钟复原并伴随晃动动画
+                startShakeAnim()
+        }
+        return true
+    }
+
+    /**
+     * 设置3D时钟效果，触摸矩阵的相关设置、照相机的旋转大小
+     * 应用在绘制图形之前，否则无效
+     * desc:Camera的坐标系是左手坐标系。当手机平整的放在桌面上，X轴是手机的水平方向，Y轴是手机的竖直方向，Z轴是垂直于手机向里的那个方向。
+     * Camera内部机制实际上还是opengl，不过大大简化了使用。
+     */
+    private fun setCameraRotate() {
+        mCameraMatrix.reset()
+        mCamera.save()
+        mCamera.rotateX(mCameraRotateX)//绕x轴旋转角度
+        mCamera.rotateY(mCameraRotateY)//绕y轴旋转角度
+        mCamera.getMatrix(mCameraMatrix)//相关属性设置到matrix中
+        mCamera.restore()
+        mCanvas.concat(mCameraMatrix)//matrix与canvas相关联
+    }
+
+    /**
+     * 时钟晃动动画
+     */
+    private fun startShakeAnim() {
+        val cameraRotateXName = "cameraRotateX"
+        val cameraRotateYName = "cameraRotateY"
+        val canvasTranslateXName = "canvasTranslateX"
+        val canvasTranslateYName = "canvasTranslateY"
+        val cameraRotateXHolder = PropertyValuesHolder.ofFloat(cameraRotateXName, mCameraRotateX, 0f)
+        val cameraRotateYHolder = PropertyValuesHolder.ofFloat(cameraRotateYName, mCameraRotateY, 0f)
+        val canvasTranslateXHolder = PropertyValuesHolder.ofFloat(canvasTranslateXName, mCanvasTranslateX, 0f)
+        val canvasTranslateYHolder = PropertyValuesHolder.ofFloat(canvasTranslateYName, mCanvasTranslateY, 0f)
+        mShakeAnim = ValueAnimator.ofPropertyValuesHolder(cameraRotateXHolder,
+                cameraRotateYHolder, canvasTranslateXHolder, canvasTranslateYHolder)
+        mShakeAnim?.interpolator = TimeInterpolator { input ->
+            //http://inloop.github.io/interpolator/
+            val f = 0.571429f
+            (Math.pow(2.0, (-2 * input).toDouble()) * Math.sin((input - f / 4) * (2 * Math.PI) / f) + 1).toFloat()
+        }
+        mShakeAnim?.duration = 1000
+        mShakeAnim?.addUpdateListener({ animation ->
+            mCameraRotateX = animation.getAnimatedValue(cameraRotateXName) as Float
+            mCameraRotateY = animation.getAnimatedValue(cameraRotateYName) as Float
+            mCanvasTranslateX = animation.getAnimatedValue(canvasTranslateXName) as Float
+            mCanvasTranslateY = animation.getAnimatedValue(canvasTranslateYName) as Float
+        })
+        mShakeAnim?.start()
+    }
+
+    /**
+     * 获取camera旋转的大小
+     *
+     * @param event motionEvent
+     */
+    private fun getCameraRotate(event: MotionEvent) {
+        val rotateX = -(event.y - height / 2)
+        val rotateY = event.x - width / 2
+        //求出此时旋转的大小与半径之比
+        val percentArr = getPercent(rotateX, rotateY)
+        //最终旋转的大小按比例匀称改变
+        mCameraRotateX = percentArr[0] * mMaxCameraRotate
+        mCameraRotateY = percentArr[1] * mMaxCameraRotate
+    }
+
+    /**
+     * 当拨动时钟时，会发现时针、分针、秒针和刻度盘会有一个较小的偏移量，形成近大远小的立体偏移效果
+     * 一开始我打算使用 matrix 和 camera 的 mCamera.translate(x, y, z) 方法改变 z 的值
+     */
+    private fun getCanvasTranslate(event: MotionEvent) {
+        val translateX = event.x - width / 2
+        val translateY = event.y - height / 2
+        //求出此时位移的大小与半径之比
+        val percentArr = getPercent(translateX, translateY)
+        //最终位移的大小按比例匀称改变
+        mCanvasTranslateX = percentArr[0] * mMaxCanvasTranslate
+        mCanvasTranslateY = percentArr[1] * mMaxCanvasTranslate
+    }
+
+    /**
+     * 获取一个操作旋转或位移大小的比例
+     * @return 装有xy比例的float数组
+     */
+    private fun getPercent(x: Float, y: Float): FloatArray {
+        val percentArr = FloatArray(2)
+        var percentX = x / mRadius
+        var percentY = y / mRadius
+        if (percentX > 1) {
+            percentX = 1f
+        } else if (percentX < -1) {
+            percentX = -1f
+        }
+        if (percentY > 1) {
+            percentY = 1f
+        } else if (percentY < -1) {
+            percentY = -1f
+        }
+        percentArr[0] = percentX
+        percentArr[1] = percentY
+        return percentArr
+    }
 }
+
 /**
  * dp转px
  */
