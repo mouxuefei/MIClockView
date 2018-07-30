@@ -8,7 +8,7 @@
 
 * 再来看看我的效果
 
-![这里写图片描述](./image/aa.gif)
+<div align=center>![这里写图片描述](./image/aa.gif)
   
 ### 具体实现过程
 我们都知道自定控件的绘制有很多种，继承view，继承viewgroup，还有继承已有的控件，但是无非就几个步骤：
@@ -120,12 +120,14 @@ init {
     }
 ```
 看下效果
-[这里写图片描述](./image/cc.png)
+
+![这里写图片描述](./image/cc.png)
 
 #### **绘制外边缘4个文字**
 然后绘制4个文字刻度：3,6,9,12，文字绘制主要是要把握到文字的具体位置，这里还是有点麻烦滴，你要知道具体的文字画笔几个属性是什么意思，如下图
 
-<div align=center>![这里写图片描述](./image/ee.gif)<div>
+<div align=center>![这里写图片描述](./image/ee.gif)
+  
 上代码
 ```
 private fun drawOutText(canvas: Canvas) {
@@ -161,6 +163,7 @@ private fun drawOutText(canvas: Canvas) {
 如图
 
 ![这里写图片描述](./image/ff.png)
+
 #### **绘制秒**
 这个是最有难度的一个地方，三角形通过旋转画布实现，知道秒表走的角度就可以了
 
@@ -221,6 +224,7 @@ private fun drawOutText(canvas: Canvas) {
     }
 ```
 #### **绘制中间小球**
+
 这个就不用多说了
 ```
   private fun drawBall(canvas: Canvas) {
@@ -230,6 +234,7 @@ private fun drawOutText(canvas: Canvas) {
 ```
 绘制就结束了，接下来是如何让时间走起来
 如图
+
 ![这里写图片描述](./image/hh.png)
 
 #### **让时间走起来**
@@ -309,7 +314,9 @@ private fun drawOutText(canvas: Canvas) {
 其实Camera内部机制实际上还是opengl，只不过大大简化了使用。这样有利于开发者进行开发
 
 Camera的坐标系是左手坐标系。当手机平整的放在桌面上，X轴是手机的水平方向，Y轴是手机的竖直方向，Z轴是垂直于手机向里的那个方向。
+
 ![这里写图片描述](./image/ii.png)
+
 
 这个控件首先要touch事件中获取到具体的旋转角度，也就是说我们在触摸的时候计算出我们需要旋转的角度，然后设置给camera，然后camera在设置给Matrix，最后关联cavans
 
