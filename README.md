@@ -4,11 +4,11 @@
 
 * 首先来看看小米的效果是这个样子的
 
-![这里写图片描述](./image/bb.gif)
+![这里写图片描述](./image/bb.png)
 
 * 再来看看我的效果
 
-  <div align=center>![这里写图片描述](./image/aa.gif)<div>
+![这里写图片描述](./image/aa.gif)
   
 ### 具体实现过程
 我们都知道自定控件的绘制有很多种，继承view，继承viewgroup，还有继承已有的控件，但是无非就几个步骤：
@@ -120,8 +120,7 @@ init {
     }
 ```
 看下效果
-
-<div align=center>![这里写图片描述](./image/cc.gif)<div>
+[这里写图片描述](./image/cc.png)
 
 #### **绘制外边缘4个文字**
 然后绘制4个文字刻度：3,6,9,12，文字绘制主要是要把握到文字的具体位置，这里还是有点麻烦滴，你要知道具体的文字画笔几个属性是什么意思，如下图
@@ -143,7 +142,8 @@ private fun drawOutText(canvas: Canvas) {
 ```
 效果图
 
-<div align=center>![这里写图片描述](./image/dd.gif)<div>
+![这里写图片描述](./image/dd.png)
+
 #### **绘制刻度**
 刻度就很简单了，每个2°绘制一个刻度，也就是有180个刻度
 
@@ -160,7 +160,7 @@ private fun drawOutText(canvas: Canvas) {
 ```
 如图
 
-<div align=center>![这里写图片描述](./image/ff.gif)<div>
+![这里写图片描述](./image/ff.png)
 #### **绘制秒**
 这个是最有难度的一个地方，三角形通过旋转画布实现，知道秒表走的角度就可以了
 
@@ -193,7 +193,7 @@ private fun drawOutText(canvas: Canvas) {
 ```
 如图
 
-<div align=center>![这里写图片描述](./image/gg.gif)<div>
+![这里写图片描述](./image/gg.png)
 
 #### **绘制分针和时针**
 分针是一阶贝塞尔就是画线，时针是画path，也是旋转角度，这两个都差不多，就是绘制path
@@ -230,7 +230,7 @@ private fun drawOutText(canvas: Canvas) {
 ```
 绘制就结束了，接下来是如何让时间走起来
 如图
-<div align=center>![这里写图片描述](./image/hh.gif)<div>
+![这里写图片描述](./image/hh.png)
 
 #### **让时间走起来**
 
@@ -309,7 +309,7 @@ private fun drawOutText(canvas: Canvas) {
 其实Camera内部机制实际上还是opengl，只不过大大简化了使用。这样有利于开发者进行开发
 
 Camera的坐标系是左手坐标系。当手机平整的放在桌面上，X轴是手机的水平方向，Y轴是手机的竖直方向，Z轴是垂直于手机向里的那个方向。
-<div align=center>![这里写图片描述](./image/ii.gif)<div>
+![这里写图片描述](./image/ii.png)
 
 这个控件首先要touch事件中获取到具体的旋转角度，也就是说我们在触摸的时候计算出我们需要旋转的角度，然后设置给camera，然后camera在设置给Matrix，最后关联cavans
 
