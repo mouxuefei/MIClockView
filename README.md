@@ -4,7 +4,7 @@
 
 * 首先来看看小米的效果是这个样子的
 
-<div align=center>![这里写图片描述](./image/bb.gif)<div>
+![这里写图片描述](./image/bb.gif)
 
 * 再来看看我的效果
 
