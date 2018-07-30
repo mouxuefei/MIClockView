@@ -4,11 +4,13 @@
 
 * 首先来看看小米的效果是这个样子的
 
-<div align="center">![这里写图片描述](./image/bb.png)</div>
+<div align="center">![这里写图片描述](./image/bb.png)
+</div>
 
 * 再来看看我的效果
 
-<div align="center">![这里写图片描述](./image/aa.gif)</div>
+<div align="center">![这里写图片描述](./image/aa.gif)
+</div>
   
 ### 具体实现过程
 我们都知道自定控件的绘制有很多种，继承view，继承viewgroup，还有继承已有的控件，但是无非就几个步骤：
