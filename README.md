@@ -416,6 +416,5 @@ touch事件的处理
 地址：[github地址](https://github.com/mouxuefei/MIClockView)
 
 如果大家喜欢,请关注我的公众号,感谢大家支持,地址如下:
-<center>
+
 ![这里写图片描述](./image/code.jpg)
-</center>
