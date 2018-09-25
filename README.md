@@ -414,3 +414,8 @@ touch事件的处理
 就这样一个小米时间控件绘制完成了
 当然我也传了一个demo到github，如果有需要可以去下载玩玩
 地址：[github地址](https://github.com/mouxuefei/MIClockView)
+
+如果大家喜欢,请关注我的公众号,感谢大家支持,地址如下:
+<center>
+![这里写图片描述](./image/code.jpg)
+</center>
